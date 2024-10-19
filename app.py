@@ -1,9 +1,10 @@
-import glob, shutil, os
+import glob, shutil, os, sys
 import pandas as pd
 from datetime import datetime
 import openpyxl
 from openpyxl import load_workbook
 from openpyxl.styles import Font
+
 
 
 # 年、月、日を取得し作成するシフトが上旬か下旬の判定
@@ -22,13 +23,19 @@ if(current_day > 18): #18日以降なら来月のシフト
 
 
 # 指定したフォルダのパス
-read_excel_path = 'read_excel' # 希望シフトが書いてあるファイルが入ってるフォルダのパス 
-format_excel_path = 'format_excel' # シフト表のテンプレが入ってるフォルダのパス
-write_file_path = f'{current_month}月{period}のシフト.xlsx'  # 新しいファイルのパス
+if getattr(sys, 'frozen', False):  # 実行ファイルとして実行されている場合
+    base_dir2 = os.path.dirname(sys.executable)  # 実行ファイルのディレクトリ
+else:
+    base_dir2 = os.path.dirname(os.path.abspath(__file__))  # Pythonスクリプトとして実行
+base_dir = os.path.dirname(os.path.abspath(__file__))
+read_excel_path = os.path.join(base_dir2, 'read_excel') # 希望シフトが書いてあるファイルが入ってるフォルダのパス 
+format_excel_path = os.path.join(base_dir2, 'format_excel') # シフト表のテンプレが入ってるフォルダのパス
+write_file_path = os.path.join(base_dir2, f'{current_month}月{period}のシフト.xlsx')  # 新しいファイルのパス
 
 # フォルダ内のExcelファイル（拡張子が .xlsx のもの）を検索
-read_excel_file = glob.glob(f'{read_excel_path}/*.xlsx')
-format_excel_file = glob.glob(f'{format_excel_path}/*.xlsx')
+read_excel_file = glob.glob(os.path.join(read_excel_path, '*.xlsx'))
+format_excel_file = glob.glob(os.path.join(format_excel_path, '*.xlsx'))
+
 
 shutil.copy(format_excel_file[0], write_file_path)
 
@@ -50,10 +57,8 @@ name_list = []
 for index, row in df_read.iterrows():
     rows_as_list.append(row.tolist())  # 行をリストに変換して追加
 
-# # name_listに名前を格納
-# for row in rows_as_list:
-#     name_list.append(row[2])
-# print(rows_as_list[1])
+# コメント列のインデックスを取得
+comment_index = df_read.columns.get_loc("コメント")
 
 # シフト表書き込み開始
 # 年月書き込み
@@ -113,6 +118,10 @@ def split_time(num, data_row, start_row, _sheet, period):
                 cell_start.value = start
                 cell_end = _sheet.cell(row=start_row, column=2 + 2*i + 1)
                 cell_end.value = end
+                if not pd.isna(row[comment_index]):
+                    cell_comment = _sheet.cell(row=start_row, column=34)
+                    cell_comment.value = f"{row[comment_index]}"
+
     else: #上旬下旬を間違って選択していた場合
         print(f"{row[2]}は上旬下旬の選択が間違ってます")
         cell = _sheet.cell(row=start_row, column=34)
