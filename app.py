@@ -13,7 +13,7 @@ now = datetime.now()
 current_year = now.year
 current_month = now.month
 current_day = now.day
-if(current_day > 18): #18日以降なら来月のシフト
+if(current_day > 18): #19日以降なら来月のシフト
     period = "上旬" #上旬
     if(current_month == 12): #12月なら年越し
         current_year += 1
@@ -106,7 +106,10 @@ def split_time(num, data_row, start_row, _sheet, period):
         for i in range(num):
             start = 0
             end = 0
-            time_range = data_row[4+i]
+            if period == "下旬":    #下旬だったら上旬の選択肢15個分つめる
+                time_range = data_row[19+i]
+            else:
+                time_range = data_row[4+i]
             if not pd.isna(time_range):
                 start_time, end_time = time_range.split("~")
                 start_hour, start_minute = start_time.split(":")
